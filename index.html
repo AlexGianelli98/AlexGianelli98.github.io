@@ -53,8 +53,8 @@
 
 				// create sprites
 
-				const amount = 3600;
-				const radius = 650;
+				const amount = 4000;
+				const radius = 625;
 
 				const textureLoader = new THREE.TextureLoader();
 
@@ -78,8 +78,8 @@
 
 					let material;
 
-                    const hue = 0.5 + (0.333 * Math.random());
-					if ( Math.random() >= 0.3 ) {
+                    const hue = 0.5 + (0.45 * Math.random());
+                    if ( Math.random() >= 0.3 ) {
 
 						material = materialB.clone();
                         material.color.setHSL( hue, 0.8, 0.5 );
@@ -94,14 +94,13 @@
 
 					}
 
-					const sprite = new THREE.Sprite( material );
+                    const sprite = new THREE.Sprite( material );
 
-					sprite.position.set( x, y, z );
-					sprite.position.normalize();
-					sprite.position.multiplyScalar( radius );
+                    sprite.position.set( x, y, z );
+                    sprite.position.normalize();
+                    sprite.position.multiplyScalar( radius );
 
-					group.add( sprite );
-
+                    group.add( sprite );
 				}
 
 				scene.add( group );
@@ -109,6 +108,7 @@
 				// renderer
 
 				renderer = new THREE.WebGLRenderer();
+                renderer.setClearColor(0x0d0d0d, 1);
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.setAnimationLoop( animate );
@@ -131,33 +131,12 @@
 				const width = material.map.image.width;
 				const height = material.map.image.height;
 
-				spriteTL = new THREE.Sprite( material );
-				spriteTL.center.set( 0.0, 1.0 );
-				spriteTL.scale.set( width, height, 1 );
-				sceneOrtho.add( spriteTL );
-
-				spriteTR = new THREE.Sprite( material );
-				spriteTR.center.set( 1.0, 1.0 );
-				spriteTR.scale.set( width, height, 1 );
-				sceneOrtho.add( spriteTR );
-
-				spriteBL = new THREE.Sprite( material );
-				spriteBL.center.set( 0.0, 0.0 );
-				spriteBL.scale.set( width, height, 1 );
-				sceneOrtho.add( spriteBL );
-
-				spriteBR = new THREE.Sprite( material );
-				spriteBR.center.set( 1.0, 0.0 );
-				spriteBR.scale.set( width, height, 1 );
-				sceneOrtho.add( spriteBR );
-
 				spriteC = new THREE.Sprite( material );
 				spriteC.center.set( 0.5, 0.5 );
 				spriteC.scale.set( width, height, 1 );
 				sceneOrtho.add( spriteC );
 
-                // TODO: TEMP 
-				//updateHUDSprites(); 
+				updateHUDSprites(); 
 
 			}
 
@@ -166,10 +145,6 @@
 				const width = window.innerWidth / 2;
 				const height = window.innerHeight / 2;
 
-				spriteTL.position.set( - width, height, 1 ); // top left
-				spriteTR.position.set( width, height, 1 ); // top right
-				spriteBL.position.set( - width, - height, 1 ); // bottom left
-				spriteBR.position.set( width, - height, 1 ); // bottom right
 				spriteC.position.set( 0, 0, 1 ); // center
 
 			}
@@ -188,7 +163,7 @@
 				cameraOrtho.bottom = - height / 2;
 				cameraOrtho.updateProjectionMatrix();
 
-				updateHUDSprites();
+				//updateHUDSprites();
 
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -215,7 +190,8 @@
 					}
 
 					sprite.material.rotation += 0.08 * ( i / l );
-					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
+                    
+                    sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
 
 					if ( material.map !== mapC ) {
 
@@ -228,6 +204,8 @@
 				group.rotation.x = time * 0.5;
 				group.rotation.y = time * 0.75;
 				group.rotation.z = time * 1.0;
+
+                camera.position.z = 1400 + Math.sin(time) * 200;
 
 				renderer.clear();
 				renderer.render( scene, camera );
