@@ -53,14 +53,14 @@
 
 				// create sprites
 
-				const amount = 200;
-				const radius = 500;
+				const amount = 3600;
+				const radius = 650;
 
 				const textureLoader = new THREE.TextureLoader();
 
 				textureLoader.load( 'textures/sprite0.png', createHUDSprites );
-				const mapB = textureLoader.load( 'textures/sprite1.png' );
-				mapC = textureLoader.load( 'textures/sprite2.png' );
+				const mapB = textureLoader.load( 'textures/Test128.png' );
+				mapC = textureLoader.load( 'textures/Test128.png' );
 
 				mapB.colorSpace = THREE.SRGBColorSpace;
 				mapC.colorSpace = THREE.SRGBColorSpace;
@@ -78,16 +78,19 @@
 
 					let material;
 
-					if ( z < 0 ) {
+                    const hue = 0.5 + (0.333 * Math.random());
+					if ( Math.random() >= 0.3 ) {
 
 						material = materialB.clone();
+                        material.color.setHSL( hue, 0.8, 0.5 );
+                        material.map.repeat.set( 2, 2 );
 
 					} else {
 
 						material = materialC.clone();
-						material.color.setHSL( 0.5 * Math.random(), 0.75, 0.5 );
-						material.map.offset.set( - 0.5, - 0.5 );
-						material.map.repeat.set( 2, 2 );
+						material.color.setHSL( hue, 0.8, 0.5 );
+						//material.map.offset.set( - 0.5, - 0.5 );
+						material.map.repeat.set( 2.5, 2.5 );
 
 					}
 
@@ -153,7 +156,8 @@
 				spriteC.scale.set( width, height, 1 );
 				sceneOrtho.add( spriteC );
 
-				updateHUDSprites();
+                // TODO: TEMP 
+				//updateHUDSprites(); 
 
 			}
 
@@ -210,7 +214,7 @@
 
 					}
 
-					sprite.material.rotation += 0.1 * ( i / l );
+					sprite.material.rotation += 0.08 * ( i / l );
 					sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
 
 					if ( material.map !== mapC ) {
