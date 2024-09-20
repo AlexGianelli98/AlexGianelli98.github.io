@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Testing ThreeJS</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div id="info">
+			lovely sprites
+		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "/build/three.module.js"
+				}
+			}
+		</script>
+
+        <script src="/build/stats.min.js"></script>
+		<script type="module">
+
+			import * as THREE from 'three';
+
+            var stats = new Stats();
+            stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.body.appendChild(stats.dom);
+
+			let camera, scene, renderer;
+			let cameraOrtho, sceneOrtho;
+
+			let spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
+
+			let map;
+
+            let raycaster, mouse;
+
+			let group;
+
+			const radius = 625;
+			const partNumber = 4000;
+
+			init();
+
+			function init() {
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				camera = new THREE.PerspectiveCamera( 60, width / height, 1, 2100 );
+				camera.position.z = 1500;
+
+				cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+				cameraOrtho.position.z = 10;
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
+
+				sceneOrtho = new THREE.Scene();
+
+				// create sprites
+
+				const textureLoader = new THREE.TextureLoader();
+
+				//textureLoader.load( 'textures/sprite0.png', createHUDSprites );
+				map = textureLoader.load( 'textures/Test128.png' );
+
+				map.colorSpace = THREE.SRGBColorSpace;
+
+				group = new THREE.Group();
+
+				const material_s = new THREE.SpriteMaterial( { map: map, color: 0xffffff, fog: true } );
+
+				for ( let a = 0; a < partNumber; a ++ ) {
+					const x = Math.random() - 0.5;
+					const y = Math.random() - 0.5;
+					const z = Math.random() - 0.5;
+
+					let material;
+
+                    const hue = 0.5 + (0.45 * Math.random());
+                    if ( Math.random() >= 0.3 ) {
+						material = material_s.clone();
+                        material.color.setHSL( hue, 0.8, 0.5 );
+                        material.map.repeat.set( 2, 2 );
+					} else {
+						material = material_s.clone();
+						material.color.setHSL( hue, 0.8, 0.5 );
+						//material.map.offset.set( - 0.5, - 0.5 );
+						material.map.repeat.set( 2.5, 2.5 );
+					}
+
+                    const sprite = new THREE.Sprite( material );
+
+                    sprite.position.set( x, y, z );
+                    sprite.position.normalize();
+                    sprite.position.multiplyScalar( radius );
+
+                    sprite.userData.originalColor = material.color.clone();
+
+                    group.add( sprite );
+				}
+
+				scene.add( group );
+
+				// renderer
+				renderer = new THREE.WebGLRenderer();
+                renderer.setClearColor(0x0d0d0d, 1);
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
+				renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+
+				document.body.appendChild( renderer.domElement );
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+
+                window.addEventListener('mousemove', onMouseMove);
+
+                raycaster = new THREE.Raycaster();
+
+                raycaster.near = 0.1; // Distanza minima
+                raycaster.far = 10000; // Distanza massima
+                mouse = new THREE.Vector2();
+
+			}
+
+            function onMouseMove(event) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            }
+
+			function createHUDSprites( texture ) {
+				texture.colorSpace = THREE.SRGBColorSpace;
+
+				const material = new THREE.SpriteMaterial( { map: texture } );
+
+				const width = material.map.image.width;
+				const height = material.map.image.height;
+
+				spriteC = new THREE.Sprite( material );
+				spriteC.center.set( 0.5, 0.5 );
+				spriteC.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteC );
+
+				//updateHUDSprites(); 
+			}
+
+			function updateHUDSprites() {
+				const width = window.innerWidth / 2;
+				const height = window.innerHeight / 2;
+
+				spriteC.position.set( 0, 0, 1 ); // center
+			}
+
+			function onWindowResize() {
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+
+				cameraOrtho.left = - width / 2;
+				cameraOrtho.right = width / 2;
+				cameraOrtho.top = height / 2;
+				cameraOrtho.bottom = - height / 2;
+				cameraOrtho.updateProjectionMatrix();
+
+				//updateHUDSprites();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+                stats.begin();
+
+				const time = Date.now() / 1000;
+
+				for ( let i = 0, l = group.children.length; i < l; i ++ ) {
+					const sprite = group.children[ i ];
+					const material = sprite.material;
+					const scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.3 + 1.0;
+
+					let imageWidth = 1;
+					let imageHeight = 1;
+
+					if ( material.map && material.map.image && material.map.image.width ) {
+						imageWidth = material.map.image.width;
+						imageHeight = material.map.image.height;
+					}
+
+					sprite.material.rotation += 0.08 * ( i / l );
+                    
+                    sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
+
+					if ( material.map !== map ) {
+						material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+					}
+
+                    // reset original color
+                    sprite.material.color.copy(sprite.userData.originalColor);
+				}
+				
+                group.rotation.x = time * 0.5;
+				group.rotation.y = time * 0.75;
+				group.rotation.z = time * 1.0;
+
+                camera.position.z = 1500 + Math.sin(time) * 130;
+
+                // RAYCASTER
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(group.children);
+                //console.log(intersects.length)
+
+                for (let i = 0; i < intersects.length; i++) {
+                    const sprite = intersects[i].object;
+                    const distance = intersects[i].distance;
+
+                    const maxDistance = 1500;
+                    const influence = distance/maxDistance;
+                    //console.log(distance + " - " + influence);
+
+                    const originalColor = sprite.userData.originalColor;
+                    const hsl = originalColor.getHSL({});
+
+                    hsl.s = THREE.MathUtils.lerp(hsl.s, 1, influence);
+                    hsl.l = THREE.MathUtils.lerp(hsl.l, 1, influence);
+
+                    sprite.material.color.setHSL(hsl.h, hsl.s, hsl.l);
+                }
+
+                // ######
+
+				renderer.clear();
+				renderer.render( scene, camera );
+				renderer.clearDepth();
+				renderer.render( sceneOrtho, cameraOrtho );
+
+                stats.end();
+			}
+
+		</script>
+	</body>
+</html>
