@@ -34,7 +34,7 @@
 
 			let spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
 
-			let mapC;
+			let map;
 
             let raycaster, mouse;
 
@@ -65,16 +65,13 @@
 				const textureLoader = new THREE.TextureLoader();
 
 				//textureLoader.load( 'textures/sprite0.png', createHUDSprites );
-				const mapB = textureLoader.load( 'textures/Test128.png' );
-				mapC = textureLoader.load( 'textures/Test128.png' );
+				map = textureLoader.load( 'textures/Test128.png' );
 
-				mapB.colorSpace = THREE.SRGBColorSpace;
-				mapC.colorSpace = THREE.SRGBColorSpace;
+				map.colorSpace = THREE.SRGBColorSpace;
 
 				group = new THREE.Group();
 
-				const materialC = new THREE.SpriteMaterial( { map: mapC, color: 0xffffff, fog: true } );
-				const materialB = new THREE.SpriteMaterial( { map: mapB, color: 0xffffff, fog: true } );
+				const material_s = new THREE.SpriteMaterial( { map: map, color: 0xffffff, fog: true } );
 
 				for ( let a = 0; a < partNumber; a ++ ) {
 					const x = Math.random() - 0.5;
@@ -85,11 +82,11 @@
 
                     const hue = 0.5 + (0.45 * Math.random());
                     if ( Math.random() >= 0.3 ) {
-						material = materialB.clone();
+						material = material_s.clone();
                         material.color.setHSL( hue, 0.8, 0.5 );
                         material.map.repeat.set( 2, 2 );
 					} else {
-						material = materialC.clone();
+						material = material_s.clone();
 						material.color.setHSL( hue, 0.8, 0.5 );
 						//material.map.offset.set( - 0.5, - 0.5 );
 						material.map.repeat.set( 2.5, 2.5 );
@@ -199,7 +196,7 @@
                     
                     sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
 
-					if ( material.map !== mapC ) {
+					if ( material.map !== map ) {
 						material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
 					}
 
