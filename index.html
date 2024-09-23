@@ -38,8 +38,10 @@
 
 			let instancedMesh;
 			const radius = 625;
-			const partNumber = 50000;
-			const originalColors = [];
+			const partNumber = 100000;
+			let originalColors = [];
+
+			let highlighterSpheres = [];
 
 			let raycaster, mouse;
 
@@ -48,7 +50,6 @@
 			function init() {
 				const width = window.innerWidth;
 				const height = window.innerHeight;
-
 				
 				// Perspective Camera (3D content)
 				camera = new THREE.PerspectiveCamera(60, width / height, 1, 2100);
@@ -187,26 +188,33 @@
 				const intersectedIds = new Set(intersects.map(intersect => intersect.instanceId));
 
 				// Change color to white for object hit by ray
-				//console.log(intersects.length);
 				for (let i = 0; i < intersects.length; i++) {
 					const instanceId = intersects[i].instanceId;
 					if (instanceId !== undefined) {
 						const color = new THREE.Color().setHSL(1, 1, 1); // Highlight color
 						instancedMesh.setColorAt(instanceId, color);
 						instancedMesh.instanceColor.needsUpdate = true;
+
+						if (!highlighterSpheres.includes(instanceId)) {
+							highlighterSpheres.push(instanceId);
+						}
 					}
 				}
 
 				// Restore default color for spheres that are not hit by the ray
-				// TODO: maybe use an array to store the indexes of the hit sphere and cycle only on those to improve rendering
-				for (let i = 0; i < partNumber; i++) {
-					if (!intersectedIds.has(i)) {
-						const originalColor = originalColors[i];
-						instancedMesh.setColorAt(i, originalColor); // Restore 
+				// Use highlightedSpheres array to improve performance
+				for (let j = highlighterSpheres.length -1; j >= 0; j--) {
+					const instanceId = highlighterSpheres[j];
+					if (!intersectedIds.has(instanceId)) {
+						const originalColor = originalColors[instanceId];
+
+						instancedMesh.setColorAt(instanceId, originalColor); // Restore 
 						instancedMesh.instanceColor.needsUpdate = true;
+
+						highlighterSpheres.splice(j, 1);
 					}
 				}
-
+				
 				// Use the composer for the bloom effect
 				composer.render();
 
