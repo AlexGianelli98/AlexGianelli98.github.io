@@ -91,7 +91,7 @@
 					sceneOrtho.add(textMesh);
 				});
 				
-				initSpheres();
+				initSpheresGrid();
 
 				// Add ambient and directional light
 				const ambientLight = new THREE.AmbientLight(0x888888, 2);
@@ -133,7 +133,61 @@
 				mouse = new THREE.Vector2();
 			}
 
-			function initSpheres() {
+			function initSpheresGrid() {
+				// Basic material
+				const material = new THREE.MeshStandardMaterial({
+					color: 0xffffff,
+					roughness: 0.3,
+					metalness: 0
+				});
+
+				// Create basic geometry for instanced meshes
+				const sphereGeometry = new THREE.SphereGeometry(0.35, 10, 10);
+				instancedMeshSpheres = new THREE.InstancedMesh(sphereGeometry, material, partNumber);
+				
+				// Add instances
+				const dummy = new THREE.Object3D(); // Dummy obj to create instances
+
+				// Use spherical coordinates to distribute points on the surface of the sphere
+				const phiIncrement = Math.PI * (3 - Math.sqrt(5)); // Golden angle in radians
+
+				for (let i = 0; i < partNumber; i++) {
+					const y = 1 - (i / (partNumber - 1)) * 2; // y goes from 1 to -1
+					const radiusAtY = Math.sqrt(1 - y * y); // Radius at current y
+					const phi = i * phiIncrement; // Golden angle increment
+
+					// Convert spherical to Cartesian coordinates
+					const x = Math.cos(phi) * radiusAtY;
+					const z = Math.sin(phi) * radiusAtY;
+
+					// Set instance position
+					dummy.position.set(x, y, z);
+					dummy.position.multiplyScalar(radius);
+
+					// Random obj scale
+					const scale = Math.random() * 10 + 15; // Dimensions from 15 to 25
+					dummy.scale.set(scale, scale, scale);
+
+					// Update dummy and add to instanced matrix
+					dummy.updateMatrix();
+					instancedMeshSpheres.setMatrixAt(i, dummy.matrix);
+
+					// Generate casual color (between cyan and purple)
+					const hue = 0.5 + (0.45 * Math.random());
+					const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
+
+					originalColors[i] = color.clone();
+
+					// Set mesh color for the instance
+					instancedMeshSpheres.setColorAt(i, color);
+					instancedMeshSpheres.instanceColor.needsUpdate = true;
+				}
+
+				scene.add(instancedMeshSpheres);
+			}
+
+
+			function initSpheresRandom() {
 				// Basic material
 				const material = new THREE.MeshStandardMaterial({
 					color: 0xffffff,
@@ -166,8 +220,8 @@
 					instancedMeshSpheres.setMatrixAt(i, dummy.matrix);
 
 					// Generate casual color (between cyan and purple)
-					const hue = 0.5 + (0.45 * Math.random());
-					const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
+					const hue = 0.5 + (0.42 * Math.random());
+					const color = new THREE.Color().setHSL(hue, 0.85, 0.5);
 					
 					originalColors[i] = color.clone();
 
@@ -218,7 +272,7 @@
 				instancedMeshSpheres.rotation.y = time * 0.075;
 				instancedMeshSpheres.rotation.z = time * 0.025;
 
-				camera.position.z = Math.sin(time) * 50;
+				camera.position.z = 1500 + Math.sin(time) * 50;
 
 				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
