@@ -8,9 +8,11 @@
 	</head>
 
 	<body>
+		<!--
 		<div id="info">
 			lovely sprites
 		</div>
+		-->
 
 		<script type="importmap">
 			{
@@ -45,8 +47,8 @@
 			let textMesh, textMaterial;
 
 			let instancedMesh;
-			const radius = 625;
-			const partNumber = 100000;
+			const radius = 750;
+			const partNumber = 25000;
 			let originalColors = [];
 			let highlighterSpheres = [];
 
@@ -98,7 +100,7 @@
 				});
 				
 				// Create basic geometry for instanced meshes
-				const sphereGeometry = new THREE.SphereGeometry(0.35, 5, 5);
+				const sphereGeometry = new THREE.SphereGeometry(0.35, 10, 10);
 				instancedMesh = new THREE.InstancedMesh(sphereGeometry, material, partNumber);
 				
 				// Add instances
@@ -138,7 +140,7 @@
 				const ambientLight = new THREE.AmbientLight(0x888888, 2);
 				scene.add(ambientLight);
 
-				const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+				const directionalLight = new THREE.DirectionalLight(0xdddddd, 1);
 				directionalLight.position.set(1, 1, 1).normalize();
 				scene.add(directionalLight);
 
@@ -202,11 +204,11 @@
 				const time = Date.now() / 1000;
 
 				// Animate group rotation
-				instancedMesh.rotation.x = time * 0.5;
-				instancedMesh.rotation.y = time * 0.75;
-				instancedMesh.rotation.z = time * 1.0;
+				instancedMesh.rotation.x = time * 0.03;
+				instancedMesh.rotation.y = time * 0.075;
+				instancedMesh.rotation.z = time * 0.025;
 
-				camera.position.z = 1500 + Math.sin(time) * 130;
+				camera.position.z = Math.sin(time) * 50;
 
 				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
@@ -240,17 +242,6 @@
 
 						highlighterSpheres.splice(j, 1);
 					}
-				}
-
-				if (textMesh) {
-					/*
-					const intersectsText = raycaster.intersectObject(textMesh);
-					if (intersectsText.length > 0) {
-						textMesh.material.color.set(0x0000ff); // Set color to blue
-					} else {
-						textMesh.material.color.set(0xff0000); // Set color back to red
-					}
-					*/
 				}
 				
 				
