@@ -30,7 +30,7 @@
   			import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 			var stats = new Stats();
-			stats.showPanel(0); // Mostra FPS
+			stats.showPanel(0); // Show FPS
 			document.body.appendChild(stats.dom);
 
 			let camera, scene, renderer, composer;
@@ -39,7 +39,6 @@
 			let instancedMesh;
 			const radius = 625;
 			const partNumber = 50000;
-			const dummy = new THREE.Object3D(); // Serve per gestire le trasformazioni
 			const originalColors = [];
 
 			let raycaster, mouse;
@@ -50,65 +49,65 @@
 				const width = window.innerWidth;
 				const height = window.innerHeight;
 
-				// Imposta la camera
+				
+				// Perspective Camera (3D content)
 				camera = new THREE.PerspectiveCamera(60, width / height, 1, 2100);
 				camera.position.z = 1500;
-
+				
+				// Ortho Camera (2D HUD)
 				cameraOrtho = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 1, 10);
 				cameraOrtho.position.z = 10;
-
+				
 				scene = new THREE.Scene();
 				scene.fog = new THREE.Fog(0x000000, 1500, 2100);
-
+				
 				sceneOrtho = new THREE.Scene();
-
-				// Crea il materiale con effetto emissivo
+				
+				// Basic material
 				const material = new THREE.MeshStandardMaterial({
 					color: 0xffffff,
 					roughness: 0.3,
 					metalness: 0
 				});
-
-				// Crea la geometria della sfera per il mesh instanziato
+				
+				// Create basic geometry for instanced meshes
 				const sphereGeometry = new THREE.SphereGeometry(0.35, 5, 5);
 				instancedMesh = new THREE.InstancedMesh(sphereGeometry, material, partNumber);
-
-				// Aggiungi le istanze
+				
+				// Add instances
+				const dummy = new THREE.Object3D(); // Dummy obj to create instances
 				for (let i = 0; i < partNumber; i++) {
 					const x = (Math.random() - 0.5) * 2;
 					const y = (Math.random() - 0.5) * 2;
 					const z = (Math.random() - 0.5) * 2;
 
-					// Posiziona ogni istanza
+					// Set instance position
 					dummy.position.set(x, y, z);
 					dummy.position.normalize();
 					dummy.position.multiplyScalar(radius);
 
-					// Rotazioni o scalature personalizzate per ogni istanza
-					const scale = Math.random() * 10 + 15; // Dimensioni casuali tra 15 e 25
-					dummy.scale.set(scale, scale, scale); // Applica la nuova scala per ogni sfera
-					dummy.rotation.z = Math.random() * Math.PI * 2;
+					// Random obj scale
+					const scale = Math.random() * 10 + 15; // Dim. between 15 and 25
+					dummy.scale.set(scale, scale, scale);
 
-					// Aggiorna la matrice di trasformazione per l'istanza corrente
+					// Update dummy and add to instanced matrix
 					dummy.updateMatrix();
 					instancedMesh.setMatrixAt(i, dummy.matrix);
 
-					// Genera un colore casuale per ogni sfera
+					// Generate casual color (between cyan and purple)
 					const hue = 0.5 + (0.45 * Math.random());
 					const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
 					
 					originalColors[i] = color.clone();
 
-					// Imposta il colore e l'emissione
+					// Set mesh color for the instance
 					instancedMesh.setColorAt(i, color);
-					const emissiveColor = color.clone();
-					//instancedMesh.material.emissive = emissiveColor;
 					instancedMesh.instanceColor.needsUpdate = true;
 				}
 
 				scene.add(instancedMesh);
 
-				// Aggiungi una luce ambientale e direzionale
+				// Add ambient and directional light
 				const ambientLight = new THREE.AmbientLight(0x888888, 2);
 				scene.add(ambientLight);
 
@@ -126,11 +125,11 @@
 
 				document.body.appendChild(renderer.domElement);
 
-				// Post-processing per l'effetto glow
+				// Post-processing for glow effect
 				const renderPass = new RenderPass(scene, camera);
 				const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
 				bloomPass.threshold = 0.18;
-				bloomPass.strength = 7.5; // Intensità del glow
+				bloomPass.strength = 7.5; // Glow intencity
 				bloomPass.radius = 0.8;
 
 				composer = new EffectComposer(renderer);
@@ -140,6 +139,7 @@
 				window.addEventListener('resize', onWindowResize);
 				window.addEventListener('mousemove', onMouseMove);
 
+				// Init raycaster and mouse
 				raycaster = new THREE.Raycaster();
 				raycaster.near = 0.1;
 				raycaster.far = 10000;
@@ -158,6 +158,12 @@
 				camera.aspect = width / height;
 				camera.updateProjectionMatrix();
 
+				cameraOrtho.left = - width / 2;
+				cameraOrtho.right = width / 2;
+				cameraOrtho.top = height / 2;
+				cameraOrtho.bottom = - height / 2;
+				cameraOrtho.updateProjectionMatrix();
+
 				composer.setSize(width, height);
 				renderer.setSize(width, height);
 			}
@@ -167,44 +173,41 @@
 
 				const time = Date.now() / 1000;
 
-				// Animazione del gruppo instanziato
+				// Animate group rotation
 				instancedMesh.rotation.x = time * 0.5;
 				instancedMesh.rotation.y = time * 0.75;
 				instancedMesh.rotation.z = time * 1.0;
 
 				camera.position.z = 1500 + Math.sin(time) * 130;
 
-				// Gestione raycaster
+				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
 				const intersects = raycaster.intersectObject(instancedMesh);
 
 				const intersectedIds = new Set(intersects.map(intersect => intersect.instanceId));
 
-				// Cambia il colore delle sfere colpite
-				console.log(intersects.length);
+				// Change color to white for object hit by ray
+				//console.log(intersects.length);
 				for (let i = 0; i < intersects.length; i++) {
 					const instanceId = intersects[i].instanceId;
 					if (instanceId !== undefined) {
-						// Cambia il colore dell'oggetto colpito
-						const color = new THREE.Color().setHSL(1, 1, 1); // Colore "highlighted"
+						const color = new THREE.Color().setHSL(1, 1, 1); // Highlight color
 						instancedMesh.setColorAt(instanceId, color);
-						//instancedMesh.material.emissive = color;
 						instancedMesh.instanceColor.needsUpdate = true;
 					}
 				}
 
-				// Ripristina il colore delle sfere che non sono più nel raggio del raycast
+				// Restore default color for spheres that are not hit by the ray
+				// TODO: maybe use an array to store the indexes of the hit sphere and cycle only on those to improve rendering
 				for (let i = 0; i < partNumber; i++) {
 					if (!intersectedIds.has(i)) {
-						// Ripristina il colore originale
 						const originalColor = originalColors[i];
-						instancedMesh.setColorAt(i, originalColor); // Ripristina il colore originale
-						//instancedMesh.material.emissive = originalColor;
+						instancedMesh.setColorAt(i, originalColor); // Restore 
 						instancedMesh.instanceColor.needsUpdate = true;
 					}
 				}
 
-				// Usa il composer per il rendering con effetto bloom
+				// Use the composer for the bloom effect
 				composer.render();
 
 				stats.end();
