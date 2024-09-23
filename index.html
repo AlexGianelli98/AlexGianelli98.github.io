@@ -29,6 +29,10 @@
   			import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/postprocessing/RenderPass.js';
   			import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/postprocessing/UnrealBloomPass.js';
 
+			import { FontLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/FontLoader.js';
+      		import { TextGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/geometries/TextGeometry.js';
+
+
 			var stats = new Stats();
 			stats.showPanel(0); // Show FPS
 			document.body.appendChild(stats.dom);
@@ -36,14 +40,15 @@
 			let camera, scene, renderer, composer;
 			let cameraOrtho, sceneOrtho;
 
+			let raycaster, mouse;
+
+			let textMesh, textMaterial;
+
 			let instancedMesh;
 			const radius = 625;
 			const partNumber = 100000;
 			let originalColors = [];
-
 			let highlighterSpheres = [];
-
-			let raycaster, mouse;
 
 			init();
 
@@ -63,6 +68,27 @@
 				scene.fog = new THREE.Fog(0x000000, 1500, 2100);
 				
 				sceneOrtho = new THREE.Scene();
+
+				// Add the text to the sceneOrtho (UI)
+				const fontLoader = new FontLoader();
+				fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+					const textGeometry = new TextGeometry('Home', {
+						font: font,
+						size: 92,
+						height: 5,
+						curveSegments: 20,
+					});
+					textGeometry.computeBoundingBox();
+  
+					// Center the textMesh using the bounding box
+					const centerOffset = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+					textGeometry.translate(centerOffset, 0, 0); // Apply the offset directly to the geometry
+
+					const textMaterial = new THREE.MeshBasicMaterial({ color: 0xcc00cc });
+					textMesh = new THREE.Mesh(textGeometry, textMaterial);
+					textMesh.position.set(0, 0, 1); // Keep the position centered
+					sceneOrtho.add(textMesh);
+				});
 				
 				// Basic material
 				const material = new THREE.MeshStandardMaterial({
@@ -144,6 +170,7 @@
 				raycaster = new THREE.Raycaster();
 				raycaster.near = 0.1;
 				raycaster.far = 10000;
+				raycaster.params.Mesh.threshold = 0.5;
 				mouse = new THREE.Vector2();
 			}
 
@@ -183,13 +210,13 @@
 
 				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
-				const intersects = raycaster.intersectObject(instancedMesh);
+				const intersectsMeshes = raycaster.intersectObject(instancedMesh);
 
-				const intersectedIds = new Set(intersects.map(intersect => intersect.instanceId));
+				const intersectedIds = new Set(intersectsMeshes.map(intersect => intersect.instanceId));
 
 				// Change color to white for object hit by ray
-				for (let i = 0; i < intersects.length; i++) {
-					const instanceId = intersects[i].instanceId;
+				for (let i = 0; i < intersectsMeshes.length; i++) {
+					const instanceId = intersectsMeshes[i].instanceId;
 					if (instanceId !== undefined) {
 						const color = new THREE.Color().setHSL(1, 1, 1); // Highlight color
 						instancedMesh.setColorAt(instanceId, color);
@@ -214,15 +241,28 @@
 						highlighterSpheres.splice(j, 1);
 					}
 				}
+
+				if (textMesh) {
+					/*
+					const intersectsText = raycaster.intersectObject(textMesh);
+					if (intersectsText.length > 0) {
+						textMesh.material.color.set(0x0000ff); // Set color to blue
+					} else {
+						textMesh.material.color.set(0xff0000); // Set color back to red
+					}
+					*/
+				}
+				
 				
 				// Use the composer for the bloom effect
 				composer.render();
 
+				renderer.clearDepth(); // Clear depth buffer for the UI
+				renderer.render(sceneOrtho, cameraOrtho); // Render UI scene
+
 				stats.end();
 			}
 		</script>
-
-		  
 		  
 	</body>
 </html>
