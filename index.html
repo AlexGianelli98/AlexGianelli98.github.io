@@ -151,7 +151,7 @@
 				instancedMeshSpheres = new THREE.InstancedMesh(sphereGeometry, material, partNumber);
 
 				const cylRad = 0.8;
-				const lineGeometry = new THREE.CylinderGeometry(cylRad, cylRad, 1, 4, 1, true);
+				const lineGeometry = new THREE.CylinderGeometry(cylRad, cylRad, 1, 4, 1, false);
 				const lineMaterial = new THREE.LineBasicMaterial({ color: 0x686868 });
 
 				// Creiamo un InstancedMesh per le linee (usiamo la geometria e il materiale definiti sopra)
@@ -210,6 +210,7 @@
 							const pos1 = new THREE.Vector3(x1, y1, z1).multiplyScalar(radius);
 							const dir = new THREE.Vector3().subVectors(pos1, sphPos);
 							const length = dir.length();
+
 							const midpoint = new THREE.Vector3().addVectors(sphPos, pos1).multiplyScalar(0.5);
 
 							// Direction between points
@@ -231,6 +232,8 @@
 						}
 					});
 				}
+
+				instancedMeshLines.count = lineInstanceIndex;
 
 				sphereGroup.add(instancedMeshSpheres);
 				sphereGroup.add(instancedMeshLines);
@@ -323,17 +326,17 @@
 				sphereGroup.rotation.y = time * 0.075;
 				sphereGroup.rotation.z = time * 0.025;
 
-				camera.position.z = 0;//Math.sin(time) * 50;
+				camera.position.z = 0 + Math.sin(time) * 50;
 
 				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
-				const intersectsMeshes = raycaster.intersectObject(instancedMeshSpheres);
+				const intersectsSpheres = raycaster.intersectObject(instancedMeshSpheres);
 
-				const intersectedIds = new Set(intersectsMeshes.map(intersect => intersect.instanceId));
+				const intersectedIds = new Set(intersectsSpheres.map(intersect => intersect.instanceId));
 
 				// Change color to white for object hit by ray
-				for (let i = 0; i < intersectsMeshes.length; i++) {
-					const instanceId = intersectsMeshes[i].instanceId;
+				for (let i = 0; i < intersectsSpheres.length; i++) {
+					const instanceId = intersectsSpheres[i].instanceId;
 					if (instanceId !== undefined) {
 						//console.log(instanceId);
 						const color = new THREE.Color().setHSL(1, 1, 1); // Highlight color
@@ -359,7 +362,18 @@
 						highlighterSpheres.splice(j, 1);
 					}
 				}
-				
+
+				/*
+				const intersectsLines = raycaster.intersectObject(instancedMeshLines);
+
+				for (let i = 0; i < intersectsLines.length; i++) {
+					const instanceId = intersectsLines[i].instanceId;
+					if (instanceId !== undefined) {
+						//console.log(instanceId);
+						
+					}
+				}
+				*/
 				
 				// Use the composer for the bloom effect
 				composer.render();
