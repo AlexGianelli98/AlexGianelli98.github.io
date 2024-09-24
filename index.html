@@ -46,10 +46,15 @@
 			let textMesh, textMaterial;
 
 			let instancedMeshSpheres;
+			let instancedMeshLines;
+			let lineGroup = new THREE.Group();
 			const radius = 750;
-			const partNumber = 25000;
+			const partNumber = 20000;
+			const deltas = [144, 377, 233];
 			let originalColors = [];
 			let highlighterSpheres = [];
+
+			let sphereGroup = new THREE.Group();
 
 			init();
 
@@ -88,7 +93,7 @@
 					const textMaterial = new THREE.MeshBasicMaterial({ color: 0xcc00cc });
 					textMesh = new THREE.Mesh(textGeometry, textMaterial);
 					textMesh.position.set(0, 0, 1); // Keep the position centered
-					sceneOrtho.add(textMesh);
+					//sceneOrtho.add(textMesh);
 				});
 				
 				initSpheresGrid();
@@ -144,6 +149,15 @@
 				// Create basic geometry for instanced meshes
 				const sphereGeometry = new THREE.SphereGeometry(0.35, 10, 10);
 				instancedMeshSpheres = new THREE.InstancedMesh(sphereGeometry, material, partNumber);
+
+				const cylRad = 0.8;
+				const lineGeometry = new THREE.CylinderGeometry(cylRad, cylRad, 1, 4, 1, true);
+				const lineMaterial = new THREE.LineBasicMaterial({ color: 0x686868 });
+
+				// Creiamo un InstancedMesh per le linee (usiamo la geometria e il materiale definiti sopra)
+				instancedMeshLines = new THREE.InstancedMesh(lineGeometry, lineMaterial, deltas.length * partNumber);
+
+				let lineInstanceIndex = 0;
 				
 				// Add instances
 				const dummy = new THREE.Object3D(); // Dummy obj to create instances
@@ -176,16 +190,53 @@
 					const hue = 0.5 + (0.45 * Math.random());
 					const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
 
-					originalColors[i] = color.clone();
-
 					// Set mesh color for the instance
+					originalColors[i] = color.clone();
 					instancedMeshSpheres.setColorAt(i, color);
 					instancedMeshSpheres.instanceColor.needsUpdate = true;
+
+					const sphPos = dummy.position.clone();
+
+					deltas.forEach(delta => {
+						const newIndex = i + delta;
+						if (newIndex < partNumber) {
+							const y1 = 1 - (newIndex / (partNumber - 1)) * 2;
+							const radiusAtY1 = Math.sqrt(1 - y1 * y1);
+							const phi1 = newIndex * phiIncrement;
+
+							const x1 = Math.cos(phi1) * radiusAtY1;
+							const z1 = Math.sin(phi1) * radiusAtY1;
+
+							const pos1 = new THREE.Vector3(x1, y1, z1).multiplyScalar(radius);
+							const dir = new THREE.Vector3().subVectors(pos1, sphPos);
+							const length = dir.length();
+							const midpoint = new THREE.Vector3().addVectors(sphPos, pos1).multiplyScalar(0.5);
+
+							// Direction between points
+							const direction = new THREE.Vector3().subVectors(pos1, sphPos).normalize();
+
+							// Set in the middle
+							dummy.position.copy(midpoint);
+
+							// Apply rotation to look both points
+							const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+							dummy.setRotationFromQuaternion(quaternion);
+
+							// Scale based on length
+							dummy.scale.set(1, length, 1);
+							dummy.updateMatrix();
+
+							// Imposta la matrice dell'instanza
+							instancedMeshLines.setMatrixAt(lineInstanceIndex++, dummy.matrix);
+						}
+					});
 				}
 
-				scene.add(instancedMeshSpheres);
-			}
+				sphereGroup.add(instancedMeshSpheres);
+				sphereGroup.add(instancedMeshLines);
 
+				scene.add(sphereGroup);
+			}
 
 			function initSpheresRandom() {
 				// Basic material
@@ -268,11 +319,11 @@
 				const time = Date.now() / 1000;
 
 				// Animate group rotation
-				instancedMeshSpheres.rotation.x = time * 0.03;
-				instancedMeshSpheres.rotation.y = time * 0.075;
-				instancedMeshSpheres.rotation.z = time * 0.025;
+				sphereGroup.rotation.x = time * 0.03;
+				sphereGroup.rotation.y = time * 0.075;
+				sphereGroup.rotation.z = time * 0.025;
 
-				camera.position.z = 1500 + Math.sin(time) * 50;
+				camera.position.z = 0;//Math.sin(time) * 50;
 
 				// Raycaster handling
 				raycaster.setFromCamera(mouse, camera);
@@ -284,6 +335,7 @@
 				for (let i = 0; i < intersectsMeshes.length; i++) {
 					const instanceId = intersectsMeshes[i].instanceId;
 					if (instanceId !== undefined) {
+						//console.log(instanceId);
 						const color = new THREE.Color().setHSL(1, 1, 1); // Highlight color
 						instancedMeshSpheres.setColorAt(instanceId, color);
 						instancedMeshSpheres.instanceColor.needsUpdate = true;
